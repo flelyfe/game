@@ -75,6 +75,23 @@ struct Diamond
     Diamond(Vector2 pos, DiamondType t, const std::string text): position(pos), type(t), texture(text) {} 
 };
 
+struct Door {
+    Vector2 position;
+    float width = 150.0f;
+    float height = 200.0f;
+    std::string playerType;
+    
+    Door() = default;
+    Door(Vector2 pos, const std::string& type): position(pos), playerType(type) {}
+    
+    bool CheckCollision(const Vector2& playerPos, const Vector2& playerSize) const 
+    {
+        Rectangle doorRect = {position.x, position.y, width, height};
+        Rectangle playerRect = {playerPos.x, playerPos.y, playerSize.x, playerSize.y};
+        return CheckCollisionRecs(playerRect, doorRect);
+    }
+};
+
 class Platforms {
 public:
     Platforms() = default; 
@@ -82,14 +99,14 @@ public:
     void DrawPlatforms() const;
     void Update(float deltaTime);
     void DrawLevers() const;
-    void CheckLeverInteractions(const Vector2& player1Pos, const Vector2& player1Size,
-                               const Vector2& player2Pos, const Vector2& player2Size);
+    void CheckLeverInteractions(const Vector2& player1Pos, const Vector2& player1Size, const Vector2& player2Pos, const Vector2& player2Size);
     const std::vector<Platform>& GetList() const {return platforms;}
     size_t size() const;
     const std::vector<Lever>& GetLevers() const {return levers;}
-private:
+    private:
     std::vector<Platform> platforms;
     std::vector<Lever> levers;
+
 };
 
 class Liquids {
@@ -99,10 +116,7 @@ public:
     void DrawLiquids() const;
     const std::vector<Liquid>& GetList() const;
     LiquidType CheckCollision(const Vector2& playerPos, const Vector2& playerSize) const;
-    static LiquidType CheckLiquidCollision(const std::vector<Liquid>& liquidsVec,
-                                          const Vector2& playerPos,
-                                          const Vector2& playerSize);
-
+    static LiquidType CheckLiquidCollision(const std::vector<Liquid>& liquidsVec, const Vector2& playerPos, const Vector2& playerSize);
 private:
     std::vector<Liquid> liquids;
     bool PointInPolygon(const Vector2& point, const std::vector<Vector2>& polygon) const;
@@ -118,7 +132,24 @@ class Diamonds
     int GetCollectedCount() const;
     int GetCollectedCountByType(DiamondType type) const;
     
-private:
+    private:
     std::vector<Diamond> diamonds;
     bool CheckCircleRectCollision(const Vector2& circlePos, float radius, const Vector2& rectPos, const Vector2& rectSize) const;
 };
+
+class Doors 
+{
+    public:
+    Doors() = default;
+    
+    bool LoadFromJSON(const std::string& jsonPath);
+    
+    const std::vector<Door>& GetDoors() const { return doors; }
+    
+    bool CheckBothPlayersAtDoors(const Vector2& waterPos, const Vector2& waterSize, const Vector2& firePos, const Vector2& fireSize) const;
+    
+    bool IsPlayerAtDoor(const Vector2& playerPos, const Vector2& playerSize, const std::string& playerType) const;
+    private:
+    std::vector<Door> doors;
+};
+

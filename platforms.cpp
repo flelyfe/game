@@ -8,21 +8,26 @@ using json = nlohmann::json;
 
 void Lever::LoadTextures() 
 {
-    if (!texture1.empty()) {
+    if (!texture1.empty()) 
+    {
         cachedTexture1 = new Texture2D(LoadTexture(texture1.c_str()));
     }
-    if (!texture2.empty()) {
+    if (!texture2.empty()) 
+    {
         cachedTexture2 = new Texture2D(LoadTexture(texture2.c_str()));
     }
 }
 
-void Lever::UnloadTextures() {
-    if (cachedTexture1) {
+void Lever::UnloadTextures() 
+{
+    if (cachedTexture1) 
+    {
         UnloadTexture(*cachedTexture1);
         delete cachedTexture1;
         cachedTexture1 = nullptr;
     }
-    if (cachedTexture2) {
+    if (cachedTexture2) 
+    {
         UnloadTexture(*cachedTexture2);
         delete cachedTexture2;
         cachedTexture2 = nullptr;
@@ -30,7 +35,8 @@ void Lever::UnloadTextures() {
 }
 
 
-bool Lever::CheckCollision(const Vector2& playerPos, const Vector2& playerSize) const {
+bool Lever::CheckCollision(const Vector2& playerPos, const Vector2& playerSize) const 
+{
     Rectangle playerRect = {playerPos.x, playerPos.y, playerSize.x, playerSize.y};
     Rectangle leverRect = {position.x, position.y, size.x, size.y};
     return CheckCollisionRecs(playerRect, leverRect);
@@ -38,19 +44,24 @@ bool Lever::CheckCollision(const Vector2& playerPos, const Vector2& playerSize) 
 
 void Lever::Trigger() 
 {
-    triggerCount++;  // ✅ Считаем нажатия
+    triggerCount++;  
     triggered = (triggerCount % 2 == 1);
 }
 
-void Lever::Draw() const {
-    if (triggered && cachedTexture2) {
+void Lever::Draw() const 
+{
+    if (triggered && cachedTexture2) 
+    {
         DrawTextureV(*cachedTexture2, position, WHITE);
-    } else if (!triggered && cachedTexture1) {
+    } 
+    else if (!triggered && cachedTexture1) 
+    {
         DrawTextureV(*cachedTexture1, position, WHITE);
     }
 }
 
-bool Platforms::LoadFromJSON(const std::string& jsonPath) {
+bool Platforms::LoadFromJSON(const std::string& jsonPath) 
+{
     std::ifstream file(jsonPath);
     if (!file.is_open()) return false;
     
@@ -64,7 +75,7 @@ bool Platforms::LoadFromJSON(const std::string& jsonPath) {
         {
             Platform plt;
             plt.type = ShapeType::Polygon; 
-            plt.isActive = false;  // ✅ НЕактивны по умолчанию!
+            plt.isActive = false;  
             plt.progress = 0.0f; 
             for (auto& p : platData["points"]) 
             {
@@ -98,11 +109,14 @@ bool Platforms::LoadFromJSON(const std::string& jsonPath) {
             id++;
         }
     }
+    
     return true;
 }
 
-void Platforms::Update(float deltaTime) {
-    for (auto& plat : platforms) {
+void Platforms::Update(float deltaTime) 
+{
+    for (auto& plat : platforms) 
+    {
         if (!plat.isMoving || !plat.isActive) continue;
         
         float dx = plat.endPos.x - plat.startPos.x;
@@ -113,57 +127,62 @@ void Platforms::Update(float deltaTime) {
         
         float speedStep = (deltaTime * plat.speed) / distance;
         
-        if (plat.movingForward) {
+        if (plat.movingForward) 
+        {
             plat.progress += speedStep;
-            if (plat.progress >= 1.0f) {
+            if (plat.progress >= 1.0f) 
+            {
                 plat.progress = 1.0f;
                 plat.isActive = false;
             }
-        } else {
+        } 
+        else 
+        {
             plat.progress -= speedStep;
-            if (plat.progress <= 0.0f) {
+            if (plat.progress <= 0.0f) 
+            {
                 plat.progress = 0.0f;
                 plat.isActive = false;
             }
         }
         
-        // ✅ ИСПОЛЬЗУЕМ ИСХОДНЫЕ ТОЧКИ!
         float offsetX = dx * plat.progress;
         float offsetY = dy * plat.progress;
         
-        for (size_t i = 0; i < plat.originalPoints.size(); ++i) {
+        for (size_t i = 0; i < plat.originalPoints.size(); ++i) 
+        {
             plat.points[i].x = plat.originalPoints[i].x + offsetX;
             plat.points[i].y = plat.originalPoints[i].y + offsetY;
         }
     }
 }
 
+void Platforms::DrawPlatforms() const
+{
+    for (size_t idx = 0; idx < platforms.size(); ++idx)
+    {
+        const auto& plat = platforms[idx];
 
-void Platforms::DrawPlatforms() const {
-    for (const auto& plat : platforms) {
-        for (size_t i = 0; i + 1 < plat.points.size(); ++i) {
-            DrawLineV(plat.points[i], plat.points[i + 1], plat.color);
-        }
-        DrawLineV(plat.points.back(), plat.points[0], plat.color);
-        if (plat.isMoving) 
+        if (plat.isMoving && plat.points.size() == 4)  
         {
-            if (plat.points.size() >= 3) 
+            float minX = plat.points[0].x;
+            float maxX = plat.points[0].x;
+            float minY = plat.points[0].y;
+            float maxY = plat.points[0].y;
+            
+            for (const auto& p : plat.points)
             {
-                Vector2 center = {0, 0};
-                for (const auto& p : plat.points) 
-                {
-                    center.x += p.x;
-                    center.y += p.y;
-                }
-                center.x /= (float)plat.points.size();
-                center.y /= (float)plat.points.size();
-                for (size_t i = 0; i < plat.points.size(); ++i) 
-                {
-                    DrawTriangle(center, plat.points[i], 
-                               plat.points[(i + 1) % plat.points.size()], DARKGRAY);
-                }
+                minX = std::min(minX, p.x);
+                maxX = std::max(maxX, p.x);
+                minY = std::min(minY, p.y);
+                maxY = std::max(maxY, p.y);
             }
+            
+            float width = maxX - minX;
+            float height = maxY - minY;
+            DrawRectangle((int)minX, (int)minY, (int)width, (int)height, DARKGRAY);
         }
+        
     }
 }
 
@@ -174,48 +193,53 @@ void Platforms::DrawLevers() const
         lever.Draw();
     }
 }
-size_t Platforms::size() const {
+size_t Platforms::size() const 
+{
     return platforms.size();
 }
 
-void Platforms::CheckLeverInteractions(const Vector2& player1Pos, const Vector2& player1Size,
-                                      const Vector2& player2Pos, const Vector2& player2Size) {
-    for (auto& lever : levers) {
+void Platforms::CheckLeverInteractions(const Vector2& player1Pos, const Vector2& player1Size, const Vector2& player2Pos, const Vector2& player2Size) 
+{
+    for (auto& lever : levers) 
+    {
         bool player1Hit = lever.CheckCollision(player1Pos, player1Size);
         bool player2Hit = lever.CheckCollision(player2Pos, player2Size);
 
-        // ✅ Срабатывает ТОЛЬКО если игрок ВХОДИТ, не каждый фрейм
         static int lastTriggeredId = -999;
         
-        if ((player1Hit || player2Hit) && lastTriggeredId != lever.id) {
+        if ((player1Hit || player2Hit) && lastTriggeredId != lever.id) 
+        {
             lever.Trigger();
             lastTriggeredId = lever.id;
             
-            for (auto& plat : platforms) {
-                if (plat.isMoving && plat.linkedLeverId == lever.id) {
-                    if (lever.triggerCount % 2 == 1) {
+            for (auto& plat : platforms) 
+            {
+                if (plat.isMoving && plat.linkedLeverId == lever.id) 
+                {
+                    if (lever.triggerCount % 2 == 1) 
+                    {
                         plat.movingForward = true;
                         plat.isActive = true;
-                        TraceLog(LOG_INFO, "Platform %d -> END POSITION", lever.id);
-                    } else {
+                    } 
+                    else 
+                    {
                         plat.movingForward = false;
                         plat.isActive = true;
-                        TraceLog(LOG_INFO, "Platform %d -> START POSITION", lever.id);
                     }
-                    break;
                 }
             }
         }
         
-        // Сброс когда игрок покидает рычаг
-        if (!player1Hit && !player2Hit && lastTriggeredId == lever.id) {
+        if (!player1Hit && !player2Hit && lastTriggeredId == lever.id) 
+        {
             lastTriggeredId = -999;
         }
     }
 }
 
 
-bool Liquids::LoadFromJSON(const std::string& jsonPath) {
+bool Liquids::LoadFromJSON(const std::string& jsonPath) 
+{
     std::ifstream file(jsonPath);
     if (!file.is_open()) return false;
     
@@ -225,7 +249,8 @@ bool Liquids::LoadFromJSON(const std::string& jsonPath) {
     
     if (!data.contains("liquids")) return true;
     
-    for (auto& liqData : data["liquids"]) {
+    for (auto& liqData : data["liquids"]) 
+    {
         std::vector<Vector2> pts;
         std::string typeStr = liqData["type"];
         
@@ -233,11 +258,13 @@ bool Liquids::LoadFromJSON(const std::string& jsonPath) {
         if (typeStr == "water") type = LiquidType::Water;
         else if (typeStr == "lava") type = LiquidType::Lava;
         else if (typeStr == "poison") type = LiquidType::Poison;
-        for (auto& p : liqData["points"]) {
+        for (auto& p : liqData["points"]) 
+        {
             pts.push_back({(float)p[0], (float)p[1]});
         }
         
-        if (!pts.empty()) {
+        if (!pts.empty()) 
+        {
             liquids.push_back({pts, type});
         }
 
@@ -247,13 +274,16 @@ bool Liquids::LoadFromJSON(const std::string& jsonPath) {
 }
 
 
-void Liquids::DrawLiquids() const {
+void Liquids::DrawLiquids() const 
+{
 
     std::vector<std::pair<float, const Liquid*>> sortedLiquids;
     
-    for (const auto& liq : liquids) {
+    for (const auto& liq : liquids) 
+    {
         float minY = 1e9f;
-        for (const auto& p : liq.points) {
+        for (const auto& p : liq.points) 
+        {
             minY = std::min(minY, p.y);
         }
         sortedLiquids.push_back({minY, &liq});
@@ -261,11 +291,14 @@ void Liquids::DrawLiquids() const {
     
     std::sort(sortedLiquids.begin(), sortedLiquids.end());
 
-    for (const auto& [minY, liq] : sortedLiquids) {
-        if (liq->points.size() >= 3) {
+    for (const auto& [minY, liq] : sortedLiquids) 
+    {
+        if (liq->points.size() >= 3) 
+        {
             
             Vector2 centerPoint = {0, 0};
-            for (const auto& p : liq->points) {
+            for (const auto& p : liq->points) 
+            {
                 centerPoint.x += p.x;
                 centerPoint.y += p.y;
             }
@@ -273,39 +306,43 @@ void Liquids::DrawLiquids() const {
             centerPoint.y /= liq->points.size();
             
             
-            for (size_t i = 0; i < liq->points.size(); ++i) {
+            for (size_t i = 0; i < liq->points.size(); ++i) 
+            {
                 Vector2 p1 = liq->points[i];
                 Vector2 p2 = liq->points[(i + 1) % liq->points.size()];
                 DrawTriangle(centerPoint, p1, p2, liq->color);
             }
             
             
-            for (size_t i = 0; i < liq->points.size(); ++i) {
+            for (size_t i = 0; i < liq->points.size(); ++i) 
+            {
                 Vector2 p1 = liq->points[i];
                 Vector2 p2 = liq->points[(i + 1) % liq->points.size()];
                 Color outlineColor = {liq->color.r, liq->color.g, liq->color.b, 255};
-                DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
-                        static_cast<int>(p2.x), static_cast<int>(p2.y),
-                        outlineColor);
+                DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y), static_cast<int>(p2.x), static_cast<int>(p2.y), outlineColor);
             }
         }
     }
 }
 
-const std::vector<Liquid>& Liquids::GetList() const {
+const std::vector<Liquid>& Liquids::GetList() const 
+{
     return liquids;
 }
 
-bool Liquids::PointInPolygon(const Vector2& point, const std::vector<Vector2>& polygon) const {
+bool Liquids::PointInPolygon(const Vector2& point, const std::vector<Vector2>& polygon) const 
+{
     int n = polygon.size();
     if (n < 3) return false;
     
     int count = 0;
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) 
+    {
         Vector2 p1 = polygon[i];
         Vector2 p2 = polygon[(i + 1) % n];
         
-        if ((p1.y <= point.y && point.y < p2.y) || (p2.y <= point.y && point.y < p1.y)) {
+        if ((p1.y <= point.y && point.y < p2.y) || (p2.y <= point.y && point.y < p1.y)) 
+        {
             float xinters = (p2.x - p1.x) * (point.y - p1.y) / (p2.y - p1.y) + p1.x;
             if (point.x < xinters) count++;
         }
@@ -314,11 +351,14 @@ bool Liquids::PointInPolygon(const Vector2& point, const std::vector<Vector2>& p
     return count % 2 == 1;
 }
 
-LiquidType Liquids::CheckCollision(const Vector2& playerPos, const Vector2& playerSize) const {
+LiquidType Liquids::CheckCollision(const Vector2& playerPos, const Vector2& playerSize) const 
+{
     Vector2 playerCenter = {playerPos.x + playerSize.x / 2.0f, playerPos.y + playerSize.y / 2.0f};
     
-    for (const auto& liq : liquids) {
-        if (PointInPolygon(playerCenter, liq.points)) {
+    for (const auto& liq : liquids) 
+    {
+        if (PointInPolygon(playerCenter, liq.points)) 
+        {
             return liq.type;
         }
     }
@@ -326,15 +366,15 @@ LiquidType Liquids::CheckCollision(const Vector2& playerPos, const Vector2& play
     return static_cast<LiquidType>(-1);
 }
 
-LiquidType Liquids::CheckLiquidCollision(const std::vector<Liquid>& liquidsVec,
-                                        const Vector2& playerPos,
-                                        const Vector2& playerSize) {
-    Vector2 playerCenter = {playerPos.x + playerSize.x / 2.0f,
-                           playerPos.y + playerSize.y / 2.0f};
+LiquidType Liquids::CheckLiquidCollision(const std::vector<Liquid>& liquidsVec, const Vector2& playerPos, const Vector2& playerSize) 
+{
+    Vector2 playerCenter = {playerPos.x + playerSize.x / 2.0f, playerPos.y + playerSize.y / 2.0f};
     
-    for (const auto& liq : liquidsVec) {
+    for (const auto& liq : liquidsVec) 
+    {
         Liquids temp;
-        if (temp.PointInPolygon(playerCenter, liq.points)) {
+        if (temp.PointInPolygon(playerCenter, liq.points)) 
+        {
             return liq.type;
         }
     }
@@ -342,14 +382,16 @@ LiquidType Liquids::CheckLiquidCollision(const std::vector<Liquid>& liquidsVec,
 }
 void Diamond::LoadDiamondTexture()
 {
-    if (!texture.empty()) {
+    if (!texture.empty()) 
+    {
         cachedtexture = new Texture2D(LoadTexture(texture.c_str()));
     }
 }
 
 void Diamond::UnloadDiamondTexture() 
 {
-    if (cachedtexture) {
+    if (cachedtexture) 
+    {
         UnloadTexture(*cachedtexture);
         delete cachedtexture;
         cachedtexture = nullptr;
@@ -366,7 +408,8 @@ bool Diamonds::LoadFromJSON(const std::string& jsonPath)
     
     if (!data.contains("diamonds")) return true;
     
-    for (auto& DiamData : data["diamonds"]) {
+    for (auto& DiamData : data["diamonds"]) 
+    {
         std::string typeStr = DiamData["type"];
         
         DiamondType type = DiamondType::Blue;
@@ -398,8 +441,8 @@ void Diamonds::DrawDiamonds() const
     }
 }
 
-bool Diamonds::CheckCircleRectCollision(const Vector2& circlePos, float radius,
-                                       const Vector2& rectPos, const Vector2& rectSize) const {
+bool Diamonds::CheckCircleRectCollision(const Vector2& circlePos, float radius, const Vector2& rectPos, const Vector2& rectSize) const 
+{
     float closestX = std::max(rectPos.x, std::min(circlePos.x, rectPos.x + rectSize.x));
     float closestY = std::max(rectPos.y, std::min(circlePos.y, rectPos.y + rectSize.y));
 
@@ -410,31 +453,36 @@ bool Diamonds::CheckCircleRectCollision(const Vector2& circlePos, float radius,
     return distance < radius;
 }
 
-bool Diamonds::CheckCollisionAndCollect(const Vector2& playerPos, const Vector2& playerSize, int playerType) {
+bool Diamonds::CheckCollisionAndCollect(const Vector2& playerPos, const Vector2& playerSize, int playerType) 
+{
     bool collected = false;
 
-    for (auto& diamond : diamonds) {
+    for (auto& diamond : diamonds) 
+    {
         if (diamond.collected) continue;
 
         Vector2 diamondCenter = diamond.position;
         
-        if (CheckCircleRectCollision(diamondCenter, diamond.size * 2.0f,
-                                    playerPos, playerSize)) {
+        if (CheckCircleRectCollision(diamondCenter, diamond.size * 2.0f, playerPos, playerSize)) 
+        {
             bool canCollect = false;
             
-            if (diamond.type == DiamondType::Blue && playerType == 0) {
+            if (diamond.type == DiamondType::Blue && playerType == 0) 
+            {
                 canCollect = true;
                 diamond.UnloadDiamondTexture();
-            } else if (diamond.type == DiamondType::Red && playerType == 1) {
+            } 
+            else if (diamond.type == DiamondType::Red && playerType == 1) 
+            {
                 canCollect = true;
                 diamond.UnloadDiamondTexture();
             }
 
-            if (canCollect) {
+            if (canCollect) 
+            {
                 diamond.collected = true;
                 collected = true;
-                TraceLog(LOG_INFO, "Diamond collected! Type: %s",
-                        diamond.type == DiamondType::Blue ? "Blue" : "Red");
+                
             }
         }
     }
@@ -442,18 +490,77 @@ bool Diamonds::CheckCollisionAndCollect(const Vector2& playerPos, const Vector2&
     return collected;
 }
 
-int Diamonds::GetCollectedCount() const {
+int Diamonds::GetCollectedCount() const 
+{
     int count = 0;
-    for (const auto& diamond : diamonds) {
+    for (const auto& diamond : diamonds) 
+    {
         if (diamond.collected) count++;
     }
     return count;
 }
 
-int Diamonds::GetCollectedCountByType(DiamondType type) const {
+int Diamonds::GetCollectedCountByType(DiamondType type) const 
+{
     int count = 0;
-    for (const auto& diamond : diamonds) {
+    for (const auto& diamond : diamonds) 
+    {
         if (diamond.collected && diamond.type == type) count++;
     }
     return count;
 }
+
+bool Doors::LoadFromJSON(const std::string& jsonPath) 
+{
+    std::ifstream file(jsonPath);
+    if (!file.is_open()) return false;
+
+    json data;
+    file >> data;
+    file.close();
+        
+    doors.clear();
+        
+    for (auto& doorData : data["doors"]) 
+    {
+        Vector2 pos = {(float)doorData["position"][0], (float)doorData["position"][1]};
+        std::string type = doorData.value("type", "water");
+        doors.emplace_back(pos, type);
+    }   
+    return true;
+        
+}
+
+
+bool Doors::CheckBothPlayersAtDoors(const Vector2& waterPos, const Vector2& waterSize, const Vector2& firePos, const Vector2& fireSize) const 
+{
+    bool waterAtDoor = false;
+    bool fireAtDoor = false;
+    
+    for (const auto& door : doors) 
+    {
+        if (door.playerType == "water" && door.CheckCollision(waterPos, waterSize)) 
+        {
+            waterAtDoor = true;
+        } 
+        else if (door.playerType == "fire" && door.CheckCollision(firePos, fireSize)) 
+        {
+            fireAtDoor = true;
+        }
+    }
+    
+    return waterAtDoor && fireAtDoor;
+}
+
+bool Doors::IsPlayerAtDoor(const Vector2& playerPos, const Vector2& playerSize, const std::string& playerType) const 
+{
+    for (const auto& door : doors) 
+    {
+        if (door.playerType == playerType && door.CheckCollision(playerPos, playerSize)) 
+        {
+            return true;
+        }
+    }
+    return false;
+}
+

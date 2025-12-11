@@ -30,12 +30,9 @@ public:
     PlayerType type;
     int jumpInputBuffer;
 
-    Player(PlayerType t, Color c, const std::string& n, Vector2 pos, Vector2 sz, 
-           Vector2 vel, float spd);
+    Player(PlayerType t, Color c, const std::string& n, Vector2 pos, Vector2 sz, Vector2 vel, float spd);
     
-    void Update(int leftkey, int rightkey, int upkey,
-                const std::vector<Platform>& platforms, const std::vector<Liquid>& liquids,
-                float screenWidth, float screenHeight);
+    void Update(int leftkey, int rightkey, int upkey,const std::vector<Platform>& platforms, const std::vector<Liquid>& liquids, float screenWidth, float screenHeight);
     
     void Draw();
     bool IsDead() const { return isDead; }
