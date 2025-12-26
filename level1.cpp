@@ -16,6 +16,10 @@ level1::level1(const std::string& platformsJson, const std::string& bgImage)
     
     background = LoadTexture(bgImage.c_str());
 
+    levelTime = 0.0f;
+    levelTimedOut = false;
+
+
 
 
 }
@@ -37,6 +41,15 @@ level1::~level1()
 void level1::Update(float deltaTime)
 {
     allplatforms.Update(deltaTime);
+    if (!levelTimedOut)
+    {
+        levelTime += deltaTime;
+        if (levelTime >= levelTimeLimit)
+        {
+            levelTime = levelTimeLimit;
+            levelTimedOut = true;
+        }
+    }
     
 }
 

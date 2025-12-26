@@ -531,7 +531,6 @@ bool Doors::LoadFromJSON(const std::string& jsonPath)
         
 }
 
-
 bool Doors::CheckBothPlayersAtDoors(const Vector2& waterPos, const Vector2& waterSize, const Vector2& firePos, const Vector2& fireSize) const 
 {
     bool waterAtDoor = false;

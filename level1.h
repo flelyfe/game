@@ -25,6 +25,10 @@ public:
     Vector2 GetFireSpawnPoint() const { return fireSpawnPoint; }
 
     const Diamonds& GetDiamonds() const { return diamonds; }
+
+    float GetLevelTime() const { return levelTime; }
+    float GetLevelTimeLimit() const { return levelTimeLimit; }
+    bool IsTimedOut() const { return levelTimedOut; }
 private:
     Platforms allplatforms;
     Texture2D background;
@@ -34,5 +38,9 @@ private:
     Vector2 waterSpawnPoint;
     Vector2 fireSpawnPoint;
     void LoadSpawnPositions(const std::string& jsonPath);
+
+    float levelTime = 0.0f;           
+    float levelTimeLimit = 120.0f;     
+    bool levelTimedOut = false;
 
 };

@@ -4,7 +4,7 @@
 #include "platforms.h"
 #include "level1.h"
 
-enum GameScreen { MENU, LEVEL1, END, DEAD, LEVEL_COMPLETE};
+enum GameScreen { MENU, LEVEL1, DEAD, LEVEL_COMPLETE, LEVEL2};
 
 int main() {
     const int screenWidth = 2133;
@@ -15,12 +15,12 @@ int main() {
     InitMenu(); 
 
     GameScreen currentScreen = MENU;
+    GameScreen lastLevelScreen = LEVEL1;
     level1* map = nullptr; 
-
-
     Player water(PlayerType::Water,BLUE, "water", {100, 1400}, {20, 20}, {0, 0}, 4.0f);
     Player fire( PlayerType::Fire,RED, "fire", {200, 1400}, {20, 20}, {0, 0}, 4.0f);
-    auto LoadLevel = [&](const char* levelFile, const char* bgFile) {
+    auto LoadLevel = [&](const char* levelFile, const char* bgFile) 
+    {
         if (map) delete map;
         map = new level1(levelFile, bgFile);
         water.position = map->GetWaterSpawnPoint();
@@ -30,9 +30,32 @@ int main() {
         water.isDead = false;
         fire.isDead = false;
     };
-
-    while (!WindowShouldClose()) {
-        if (currentScreen == MENU) {
+    while (!WindowShouldClose()) 
+    {
+        if ((currentScreen == LEVEL1 || currentScreen==LEVEL2 ) && map) 
+        {
+            map->Update(GetFrameTime());
+            map->CheckLeverInteractions(water.position, water.size,fire.position, fire.size);
+            map->CheckDiamondCollisions(water.position, water.size, fire.position, fire.size);
+            water.Update(KEY_A, KEY_D, KEY_W, map->getPlatforms(), map->getLiquids(), screenWidth, screenHeight);
+            fire.Update(KEY_LEFT, KEY_RIGHT, KEY_UP, map->getPlatforms(), map->getLiquids(), screenWidth, screenHeight);
+        
+            if (map->CheckLevelComplete(water.position, water.size, fire.position, fire.size)) 
+            {
+                lastLevelScreen = currentScreen; 
+                currentScreen = LEVEL_COMPLETE;
+            }
+            else if (map->IsTimedOut()) 
+            {
+                currentScreen = DEAD;
+            }
+            else if (water.IsDead() || fire.IsDead()) 
+            {
+                currentScreen = DEAD;
+            }
+        }
+        if (currentScreen == MENU) 
+        {
             BeginDrawing();
             ClearBackground(RAYWHITE);
             DrawMenu();
@@ -42,38 +65,47 @@ int main() {
             if (menuResult == 1) 
             {
                 currentScreen = LEVEL1;
-                LoadLevel("../../../platforms.json","../../../resources/level1.jpg");
+                lastLevelScreen = currentScreen; 
+                LoadLevel("../../../platforms.json","../../../resources/level11.jpg");
             } 
             else if (menuResult == -1) 
             {
                 break;
             }
         }
-        else if (currentScreen == LEVEL1 && map) 
+        if (currentScreen == LEVEL1 && map) 
         {
-    
-            map->Update(GetFrameTime());
-            map->CheckLeverInteractions(water.position, water.size,fire.position, fire.size);
-            map->CheckDiamondCollisions(water.position, water.size, fire.position, fire.size);
-            water.Update(KEY_A, KEY_D, KEY_W, map->getPlatforms(), map->getLiquids(), screenWidth, screenHeight);
-            fire.Update(KEY_LEFT, KEY_RIGHT, KEY_UP, map->getPlatforms(), map->getLiquids(), screenWidth, screenHeight);
-             if (map->CheckLevelComplete(water.position, water.size,
-                                       fire.position, fire.size)) {
-                currentScreen = LEVEL_COMPLETE;
-            }
-            if (water.IsDead() || fire.IsDead()) 
-            {
-                currentScreen = DEAD;
-            }
-
             BeginDrawing();
             ClearBackground(RAYWHITE);
             map->Draw();
             water.Draw();
             fire.Draw();
+
+            float remainingTime = map->GetLevelTimeLimit() - map->GetLevelTime();
+            int displayTime = (int)std::max(0.0f, remainingTime);
+            std::string timerText = "Time: " + std::to_string(displayTime) + "s";
+
+            Color timerColor = WHITE;
+            DrawText(timerText.c_str(), 990, 50, 40, timerColor);
+
             EndDrawing();
         }
-        else if (currentScreen == LEVEL_COMPLETE) {
+        if (currentScreen == LEVEL2 && map) 
+        {
+            BeginDrawing();
+            ClearBackground(RAYWHITE);
+            map->Draw();
+            water.Draw();
+            fire.Draw();
+            float remainingTime = map->GetLevelTimeLimit() - map->GetLevelTime();
+            int displayTime = (int)std::max(0.0f, remainingTime);
+            std::string timerText = "Time: " + std::to_string(displayTime) + "s";
+            Color timerColor = WHITE;
+            DrawText(timerText.c_str(), 990, 50, 40, timerColor);
+            EndDrawing();
+        }
+        if (currentScreen == LEVEL_COMPLETE) 
+        {
             BeginDrawing();
             ClearBackground(RAYWHITE);
             map->Draw();
@@ -82,7 +114,7 @@ int main() {
 
             DrawRectangle(0, 0, screenWidth, screenHeight, Color{0, 0, 0, 150});
             const char* congratsText = "LEVEL COMPLETE!";
-            const char* nextText = "Press SPACE for next level or R for menu";
+            const char* nextText = "Press C for next level or R for menu";
 
             int textWidth = MeasureText(congratsText, 60);
             DrawText(congratsText, (screenWidth - textWidth) / 2,
@@ -94,22 +126,29 @@ int main() {
 
             EndDrawing();
 
-            if (IsKeyPressed(KEY_SPACE)) {
-                // TODO: Для уровня 2:
-                // LoadLevel("../../../platforms2.json", "../../../resources/level2.jpg");
-                // currentScreen = LEVEL1;
-
-                // Пока переходим в меню:
-                currentScreen = MENU;
-                if (map) delete map;
-                map = nullptr;
-            } else if (IsKeyPressed(KEY_R)) {
+            if (IsKeyPressed(KEY_C)) 
+            {
+                if (lastLevelScreen ==LEVEL1) 
+                {
+                    currentScreen = LEVEL2;
+                    LoadLevel("../../../platforms2.json", "../../../resources/level22.jpg");
+                } 
+                else if (lastLevelScreen == LEVEL2) 
+                {
+                    currentScreen = MENU;
+                    if (map) delete map;
+                    map = nullptr;
+                }
+            } 
+            else if (IsKeyPressed(KEY_R)) 
+            {
                 currentScreen = MENU;
                 if (map) delete map;
                 map = nullptr;
             }
         }
-        else if (currentScreen == DEAD) {
+        if (currentScreen == DEAD) 
+        {
             BeginDrawing();
             ClearBackground(RAYWHITE);
             map->Draw();

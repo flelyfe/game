@@ -54,10 +54,11 @@ struct Lever {
     void Trigger();
     void Draw() const;
 };
-struct Liquid {
+struct Liquid 
+{
     std::vector<Vector2> points;
     LiquidType type;
-    Color color;
+    Color color=BLANK;
 };
 
 struct Diamond
@@ -75,7 +76,8 @@ struct Diamond
     Diamond(Vector2 pos, DiamondType t, const std::string text): position(pos), type(t), texture(text) {} 
 };
 
-struct Door {
+struct Door 
+{
     Vector2 position;
     float width = 150.0f;
     float height = 200.0f;
